@@ -7,16 +7,13 @@
 class MainWindow : public Gtk::Window
 {
 public:
-    MainWindow();
-    virtual ~MainWindow();
-
+        MainWindow();
+        virtual ~MainWindow();
+        
 protected:
-    Gtk::Frame m_frame;
-    GameOfLife game;
-
+        Gtk::Frame m_frame;
+        GameOfLife game;
+        
 };
 
-#endif
-    
-    
-        
+#endif        
