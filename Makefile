@@ -5,14 +5,10 @@ LIBS = `pkg-config gtkmm-3.0 cairomm-1.0 --libs`
 all:main
 
 game-of-life.o : game-of-life.hh game-of-life.cc
-	$(CXX) $*.cc -fPIC -dPIC -O -o $@ $(HEADERS) $(LIBS)
+	$(CXX) $*.cc -fPIC -c -O -o $@ $(HEADERS) $(LIBS)
 
 main-window.o : main-window.hh main-window.cc
-	$(CXX) $*.cc -fPIC -dPIC -O -o $@ $(HEADERS) $(LIBS)
-
-static: static-library
-static-library : game-of-life.o main-window.o
-	ar rcs libgame-of-life.a game-of-life.o main-window.o
+	$(CXX) $*.cc -fPIC -c -O -o $@ $(HEADERS) $(LIBS)
 
 shared: shared-library
 shared-library: game-of-life.o main-window.o
