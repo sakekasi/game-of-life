@@ -250,6 +250,20 @@ void GameOfLife::toggle_grid()
         this->set_grid_on(!this->grid_on());
 }
 
+void GameOfLife::reset()
+{
+        //initialize binary layer (grid)
+        this->cells = (bool **) calloc( GRID_ROWS  , sizeof(bool *));
+        
+        int i,j;
+        for(i=0;i < GRID_ROWS;i++){
+                this->cells[i] = (bool *) calloc( GRID_COLS , sizeof(bool));
+                for(j=0;j < GRID_COLS ;j++){
+                        this->cells[i][j] = false;
+                }
+        }
+}
+
 
 bool **GameOfLife::next_cells_init()
 {

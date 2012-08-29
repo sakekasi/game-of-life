@@ -18,6 +18,7 @@ protected:
 
         Gtk::Toolbar toolbar;
         Gtk::ToggleToolButton run,grid_on;
+        Gtk::ToolButton reset;
 };
 
 #endif        

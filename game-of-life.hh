@@ -31,6 +31,9 @@ public:
         bool grid_on();
         bool set_grid_on(bool);
         void toggle_grid();
+
+        void reset();
+        
         
 protected:
         //drawing
