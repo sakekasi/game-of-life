@@ -9,7 +9,7 @@
 #include "main-window.hh"
 
 MainWindow::MainWindow()
-        :Gtk::Window()
+        :Gtk::Window(), m_frame(), game()
 {
         this->add(m_frame);
         this->m_frame.set_label("Game of Life");

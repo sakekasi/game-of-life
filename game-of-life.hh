@@ -8,6 +8,8 @@
 #define GRID_ROWS 1000
 #define GRID_COLS 1000
 #define REFRESH_TIME_MILLIS 100
+#define PAUSE true
+#define PLAY false
 
 class GameOfLife : public Gtk::DrawingArea
 {
@@ -23,6 +25,11 @@ public:
         
         int get_col_width();
         int get_row_height();
+
+        bool play_pause();
+
+        bool grid_on();
+        bool set_grid_on(bool);
         
 protected:
         //drawing
@@ -40,6 +47,10 @@ protected:
 
         //game engine
         bool tick();
+        void create_updated_grid();
+        bool cells_get(int,int);
+        void next_cells_set(int,int,bool);
+        bool **next_cells_init();
         
         int columns;
         int rows;
@@ -51,8 +62,14 @@ protected:
         int row_height;
         
         int l_width;
+
+        bool paused;
+        bool grid;
         
         bool** cells;
+        bool** next_cells;
+        
 };
+
 
 #endif

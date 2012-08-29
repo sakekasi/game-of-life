@@ -33,7 +33,7 @@
  */
 
 GameOfLife::GameOfLife()
-        : l_width(1), col_width(15), row_height(15)
+        : l_width(1), col_width(15), row_height(15), paused(PLAY), grid(true)
 {
         //initialize binary layer (grid)
         this->cells = (bool **) calloc( GRID_ROWS  , sizeof(bool *));
@@ -45,7 +45,7 @@ GameOfLife::GameOfLife()
                         this->cells[i][j] = false;
                 }
         }
-
+        
         //set up signals
         
         Glib::signal_timeout().connect(sigc::mem_fun(*this, &GameOfLife::tick), REFRESH_TIME_MILLIS );
@@ -57,7 +57,6 @@ GameOfLife::GameOfLife()
         this->signal_button_press_event().connect( sigc::mem_fun(*this, &GameOfLife::on_click), false);
         this->signal_motion_notify_event().connect(sigc::mem_fun(*this, &GameOfLife::on_mouse_move), false);
         this->set_events(Gdk::BUTTON_PRESS_MASK | Gdk::POINTER_MOTION_MASK);
-        
 
 }
 
@@ -227,7 +226,102 @@ bool GameOfLife::on_timeout()
         return true;
 }
 
+bool GameOfLife::play_pause()
+{
+        bool ret = this->paused;
+
+        this->paused = !this->paused;
+
+        return ret;
+}
+
+
+bool GameOfLife::grid_on()
+{
+        return this->grid;
+}
+
+bool GameOfLife::set_grid_on(bool b)
+{
+        bool ret = this->grid;
+
+        this->grid = b;
+
+        return ret;
+}
+
+bool **GameOfLife::next_cells_init()
+{
+        this->next_cells = (bool **) calloc( GRID_ROWS  , sizeof(bool *));
+        
+        int i,j;
+        for(i=0;i < GRID_ROWS;i++){
+                this->next_cells[i] = (bool *) calloc( GRID_COLS , sizeof(bool));
+                for(j=0;j < GRID_COLS ;j++){
+                        this->next_cells[i][j] = false;
+                }
+        }        
+}
+
+bool GameOfLife::cells_get(int i, int j)
+{
+        if(i<0 || j<0){
+                return false;
+        } else if(i>GRID_ROWS || j>GRID_COLS){
+                return false;
+        } else {
+                return this->cells[i][j];
+        }
+}
+
+void GameOfLife::next_cells_set(int i, int j, bool v)
+{
+        this->next_cells[i][j] = v;
+}
+
 bool GameOfLife::tick()
 {
+        if(this->paused == PLAY){
+                this->create_updated_grid();
+                this->cells = this->next_cells;
+        }
         return this->on_timeout();
 }
+
+void GameOfLife::create_updated_grid()
+{
+        int i,j,k,count;
+
+        this->next_cells_init();
+
+        for(i=0;i<GRID_ROWS;i++){
+                for(j=0;j<GRID_COLS;j++){
+                        count = 0;
+
+                        count += (this->cells_get(i+1,j)) ? 1:0;
+                        count += (this->cells_get(i-1,j)) ? 1:0;
+
+                        for(k=-1;k<2;k++){
+                                count += (this->cells_get(i+k,j+1)) ? 1:0;
+                                count += (this->cells_get(i+k,j-1)) ? 1:0;
+                        }
+
+                        if(this->cells_get(i,j)){
+                                if(count<2){
+                                        this->next_cells_set(i,j,false);
+                                } else if(count>3){
+                                        this->next_cells_set(i,j,false);
+                                } else {
+                                        this->next_cells_set(i,j,true);
+                                }
+                        } else {
+                                if(count == 3){
+                                        this->next_cells_set(i,j,true);
+                                } else {
+                                        this->next_cells_set(i,j,false);
+                                }
+                        }
+                }
+        }
+}
+
