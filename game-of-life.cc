@@ -118,9 +118,9 @@ bool GameOfLife::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
         cr->paint();
         cr->save();
 
+        this->fill_grid(cr);
         if(this->grid)
                 this->draw_grid(cr);
-        this->fill_grid(cr);
         
         return true;
 }
@@ -128,7 +128,7 @@ bool GameOfLife::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 bool GameOfLife::draw_grid(const Cairo::RefPtr<Cairo::Context>& cr)
 {
         cr->set_line_cap(Cairo::LINE_CAP_SQUARE);
-        cr->set_source_rgb(0.0 , 0.0 , 0.0);    
+        cr->set_source_rgb(0.5 ,0.5 , 0.5);    
         
         int i;
         for( i=0 ; i < this->get_width(); i += this->get_col_width() ){
