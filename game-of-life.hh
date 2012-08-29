@@ -26,10 +26,11 @@ public:
         int get_col_width();
         int get_row_height();
 
-        bool play_pause();
+        void play_pause();
 
         bool grid_on();
         bool set_grid_on(bool);
+        void toggle_grid();
         
 protected:
         //drawing

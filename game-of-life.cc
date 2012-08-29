@@ -22,7 +22,6 @@
  *
  *Author: Saketh Kasibatla
  */
-
 #include <iostream>
 #include <cairomm/context.h>
 #include <glibmm/main.h>
@@ -33,7 +32,7 @@
  */
 
 GameOfLife::GameOfLife()
-        : l_width(1), col_width(15), row_height(15), paused(PLAY), grid(true)
+        : l_width(1), col_width(15), row_height(15), paused(PAUSE), grid(true)
 {
         //initialize binary layer (grid)
         this->cells = (bool **) calloc( GRID_ROWS  , sizeof(bool *));
@@ -118,8 +117,9 @@ bool GameOfLife::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
         cr->set_source_rgb(1.0 , 1.0 , 1.0);
         cr->paint();
         cr->save();
-        
-        this->draw_grid(cr);
+
+        if(this->grid)
+                this->draw_grid(cr);
         this->fill_grid(cr);
         
         return true;
@@ -158,8 +158,8 @@ bool GameOfLife::fill_grid(const Cairo::RefPtr<Cairo::Context>& cr)
 {
         int i,j;
 
-        for(i=0;i<this->get_rows();i++){
-                for(j=0;j<this->get_cols();j++){
+        for(i=0;i<this->get_cols();i++){
+                for(j=0;j<this->get_rows();j++){
                         if(this->cells[i][j]){
                                 this->fill_square(cr, i,j);
                         }
@@ -185,7 +185,6 @@ bool GameOfLife::fill_square(const Cairo::RefPtr<Cairo::Context>& cr, int c, int
 
 bool GameOfLife::on_click(GdkEventButton *event)
 {
-
         int x = ( (int) event->x ) / this->get_col_width();
         int y = ( (int) event->y ) / this->get_row_height();
 
@@ -226,13 +225,9 @@ bool GameOfLife::on_timeout()
         return true;
 }
 
-bool GameOfLife::play_pause()
+void GameOfLife::play_pause()
 {
-        bool ret = this->paused;
-
         this->paused = !this->paused;
-
-        return ret;
 }
 
 
@@ -249,6 +244,12 @@ bool GameOfLife::set_grid_on(bool b)
 
         return ret;
 }
+
+void GameOfLife::toggle_grid()
+{
+        this->set_grid_on(!this->grid_on());
+}
+
 
 bool **GameOfLife::next_cells_init()
 {
@@ -267,7 +268,7 @@ bool GameOfLife::cells_get(int i, int j)
 {
         if(i<0 || j<0){
                 return false;
-        } else if(i>GRID_ROWS || j>GRID_COLS){
+        } else if(i>=GRID_ROWS || j>=GRID_COLS){
                 return false;
         } else {
                 return this->cells[i][j];
