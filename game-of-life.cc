@@ -1,342 +1,212 @@
-/*
- *game-of-life.cc
- *
- *An implementation of the Gtk::DrawingArea subclass outlined in
- *game-of-life.hh
- *
- *-------------------------------------------------------------------------
- *there are three layers here:
- *
- *the abstract layer (the user's layer) whose code is as simple and
- *perfect as possible.
- *
- *the magic layer, which isthe layer that sits in between and handles edge
- *cases such as indices of -1 etc. etc.
- *
- *the binary layer where the actual data stored in a 2d array.
- *
- *-------------------------------------------------------------------------
- *these three layers will be used to provide user I/O as well as a
- *method to handle the data such that when executing a generation of
- *the game of life, each index in the data is only accessed once.
- *
- *Author: Saketh Kasibatla
- */
-#include <iostream>
-#include <cairomm/context.h>
-#include <glibmm/main.h>
 #include "game-of-life.hh"
+#include "constants.hh"
 
-/*
- *constructors / destructors
- */
+#include "SDL/SDL.h"
+#include "SDL/SDL_gfxPrimitives.h"
+#include <algorithm>
+using namespace std;
 
-GameOfLife::GameOfLife()
-        : l_width(1), col_width(15), row_height(15), paused(PAUSE), grid(true)
+//HELPER FUNCTIONS
+////////////////////////////////////////////////////////////////////
+void init_field_array(bool*& b)
 {
-        //initialize binary layer (grid)
-        this->cells = (bool **) calloc( GRID_ROWS  , sizeof(bool *));
-        
-        int i,j;
-        for(i=0;i < GRID_ROWS;i++){
-                this->cells[i] = (bool *) calloc( GRID_COLS , sizeof(bool));
-                for(j=0;j < GRID_COLS ;j++){
-                        this->cells[i][j] = false;
-                }
-        }
-        
-        //set up signals
-        
-        Glib::signal_timeout().connect(sigc::mem_fun(*this, &GameOfLife::tick), REFRESH_TIME_MILLIS );
-#ifndef GLIBMM_DEFAULT_SIGNAL_HANDLERS_ENABLED
-        //Connect the signal handler if it isn't already a virtual method override:
-        signal_draw().connect(sigc::mem_fun(*this, &GameOfLife::on_draw), false);
-#endif //GLIBMM_DEFAULT_SIGNAL_HANDLERS_ENABLED
+  b = new bool[FIELD_DIMENSION];
+}
 
-        this->signal_button_press_event().connect( sigc::mem_fun(*this, &GameOfLife::on_click), false);
-        this->signal_motion_notify_event().connect(sigc::mem_fun(*this, &GameOfLife::on_mouse_move), false);
-        this->set_events(Gdk::BUTTON_PRESS_MASK | Gdk::POINTER_MOTION_MASK);
+void del_field_array(bool *b)
+{
+  delete [] b;
+}
 
+
+//PUBLIC INTERFACE
+/////////////////////////////////////////////////////////////////////
+GameOfLife::GameOfLife(SDL_Surface *s)
+  :_screen(s)
+{
+  _field = new bool*[FIELD_DIMENSION];
+  for_each(_field, _field+FIELD_DIMENSION, init_field_array);
+
+  for(int i=0; i<FIELD_DIMENSION; i++)
+    for(int j=0; j<FIELD_DIMENSION; j++)
+      _field[i][j] = false;
 }
 
 GameOfLife::~GameOfLife()
 {
+  for_each(_field, _field+FIELD_DIMENSION, del_field_array);
+  delete[] _field;
+}
+
+void GameOfLife::draw()
+{
+  this->draw_background();
+  this->draw_lines();
+  this->fill_cells();
+}
+
+void GameOfLife::iterate()
+{
+  bool **new_field = new bool*[FIELD_DIMENSION];
+  for_each(new_field, new_field+FIELD_DIMENSION, init_field_array);
+  for(int i=0; i<FIELD_DIMENSION; i++)
+    for(int j=0; j<FIELD_DIMENSION; j++)
+      new_field[i][j] = false;
+
+  
+  for( int i=0; i<FIELD_DIMENSION; i++ )
+    for( int j=0; j<FIELD_DIMENSION; j++ )
+      {
+	int live_neighbors = this->n_live_neighbors(i,j);
+	if( _field[i][j] )
+	  {
+	  if( live_neighbors < 2)
+	    new_field[i][j] = false;
+	  else if( live_neighbors > 3)
+	    new_field[i][j] = false;
+	  else
+	    new_field[i][j] = true;
+	  }
+	else
+	  if( live_neighbors == 3)
+	    new_field[i][j] = true;
+	  else
+	    new_field[i][j] = false;
+      }
+
+    for_each(_field, _field+FIELD_DIMENSION, del_field_array);
+    delete[] _field;
+
+    _field = new_field;
 }
 
 
-/*
- *accessors
- */
-
-int GameOfLife::get_cols()
+void GameOfLife::set_true(int x, int y)
 {
-        return this->columns;
+  int r = x/CELL_DIMENSION;
+  int c = y/CELL_DIMENSION;
+
+  _field[r][c] = true;
 }
 
-int GameOfLife::get_rows()
+void GameOfLife::set_false(int x, int y)
 {
-        return this->rows;
+  int r = x/CELL_DIMENSION;
+  int c = y/CELL_DIMENSION;
+
+  _field[r][c] = false;
 }
 
+  
 
-int GameOfLife::get_width()
+
+//PRIVATE FUNCTIONS
+/////////////////////////////////////////////////////////////////////
+void GameOfLife::draw_background()
 {
-        return this->width;
-}
-
-int GameOfLife::get_height()
-{
-        return this->height;
-}
-
-
-int GameOfLife::get_col_width()
-{
-        return this->col_width;
-}
-
-int GameOfLife::get_row_height()
-{
-        return this->row_height;
-}
-
-/*
- *painting functions
- */
-
-bool GameOfLife::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
-{
-        this->width = this->get_allocation().get_width();
-        this->height = this->get_allocation().get_height();
-        
-        this->columns = this->width / this->col_width;
-        this->rows = this->height / this->row_height;
-        
-        
-        cr->set_line_width(l_width);
-        cr->set_source_rgb(1.0 , 1.0 , 1.0);
-        cr->paint();
-        cr->save();
-
-        this->fill_grid(cr);
-        if(this->grid)
-                this->draw_grid(cr);
-        
-        return true;
-}
-
-bool GameOfLife::draw_grid(const Cairo::RefPtr<Cairo::Context>& cr)
-{
-        cr->set_line_cap(Cairo::LINE_CAP_SQUARE);
-        cr->set_source_rgb(0.5 ,0.5 , 0.5);    
-        
-        int i;
-        for( i=0 ; i < this->get_width(); i += this->get_col_width() ){
-                cr->save();
-                
-                cr->move_to(i, TOP_YCOORD);
-                cr->line_to(i, this->get_height());
-                
-                cr->stroke();
-                cr->restore();
-        }
-        
-        for( i=0 ; i < this->get_height() ; i += this->get_row_height() ){
-                cr->save();
-                
-                cr->move_to(LEFT_XCOORD, i);
-                cr->line_to(this->get_width() , i);
-                
-                cr->stroke();
-                cr->restore();
-        }
-        
-        return true;
-}
-
-bool GameOfLife::fill_grid(const Cairo::RefPtr<Cairo::Context>& cr)
-{
-        int i,j;
-
-        for(i=0;i<this->get_cols();i++){
-                for(j=0;j<this->get_rows();j++){
-                        if(this->cells[i][j]){
-                                this->fill_square(cr, i,j);
-                        }
-                }
-        }
-
-        return true;
-}
-
-bool GameOfLife::fill_square(const Cairo::RefPtr<Cairo::Context>& cr, int c, int r)
-{
-        int x=this->get_col_width()*c , y=this->get_row_height()*r;
-
-        cr->set_source_rgb(0.0, 0.0, 0.0);
-        
-        cr->save();
-        cr->rectangle(x,y,this->get_col_width(), this->get_row_height());
-        cr->fill();
-        cr->restore();
-        
-        return true;
-}
-
-bool GameOfLife::on_click(GdkEventButton *event)
-{
-        int x = ( (int) event->x ) / this->get_col_width();
-        int y = ( (int) event->y ) / this->get_row_height();
-
-        this->cells[x][y] = !this->cells[x][y];
-        
-        
-        return this->on_timeout();
-}
-
-bool GameOfLife::on_mouse_move(GdkEventMotion *event)
-{
-        static int last_x=-1, last_y=-1;
-        int x, y;
-        
-        x=( (int) event->x ) / this->get_col_width();
-        y=( (int) event->y ) / this->get_row_height();
-
-        if( event->state & GDK_BUTTON1_MASK ){
-                this->cells[x][y] = true;
-        } else if ( event->state & GDK_BUTTON3_MASK ){
-                this->cells[x][y] = false;
-        }
-        
-
-        return this->on_timeout();
-}
-
-bool GameOfLife::on_timeout()
-{
-        Glib::RefPtr<Gdk::Window> win = get_window();
-        
-        if (win)
-        {
-                Gdk::Rectangle r(0, 0, get_allocation().get_width(),
-                                 get_allocation().get_height());
-                win->invalidate_rect(r, false);
-        }
-        return true;
-}
-
-void GameOfLife::play_pause()
-{
-        this->paused = !this->paused;
+  boxRGBA( _screen,
+	   LEFT, TOP,
+	   SCREEN_WIDTH, SCREEN_HEIGHT,
+	   WHITE_R, WHITE_G, WHITE_B, OPAQUE );
 }
 
 
-bool GameOfLife::grid_on()
+void GameOfLife::draw_lines()
 {
-        return this->grid;
+  int width = _screen->w;
+  int height = _screen->h;
+  int n_lines;
+
+  //horizontal lines
+  n_lines = width / CELL_DIMENSION;  
+  for( int i=1; i<=n_lines; i++)
+    {
+      thickLineRGBA( _screen, //destination surface
+		     CELL_DIMENSION*i, TOP, //starting point
+		     CELL_DIMENSION*i, height, //ending point
+		     LINE_WIDTH, //thickness
+		     BLACK_R, BLACK_G, BLACK_B, OPAQUE); //color
+    }
+
+  //vertical lines
+  n_lines = height / CELL_DIMENSION;
+  for( int i=1; i<= n_lines; i++)
+    {
+      thickLineRGBA( _screen,
+		     LEFT, CELL_DIMENSION*i,
+		     width, CELL_DIMENSION*i,
+		     LINE_WIDTH,
+		     BLACK_R, BLACK_G, BLACK_B, OPAQUE);
+    }
 }
 
-bool GameOfLife::set_grid_on(bool b)
+void GameOfLife::fill_cells()
 {
-        bool ret = this->grid;
-
-        this->grid = b;
-
-        return ret;
+  for( int i=0; i < FIELD_DIMENSION; i++ )
+    for( int j=0; j < FIELD_DIMENSION; j++ )
+      if( _field[i][j] )
+	this->fill_cell(i,j);
 }
 
-void GameOfLife::toggle_grid()
+void GameOfLife::fill_cell(int r, int c)
 {
-        this->set_grid_on(!this->grid_on());
+  if( !(r*CELL_DIMENSION > SCREEN_WIDTH || r < 0 ||
+	c*CELL_DIMENSION > SCREEN_HEIGHT || c < 0) )
+      boxRGBA( _screen,
+	       r*CELL_DIMENSION, c*CELL_DIMENSION,
+	       (r+1)*CELL_DIMENSION, (c+1)*CELL_DIMENSION,
+	       BLACK_R, BLACK_G, BLACK_B, OPAQUE);
 }
 
-void GameOfLife::reset()
+		     
+
+int GameOfLife::n_live_neighbors(int r, int c)
 {
-        //initialize binary layer (grid)
-        this->cells = (bool **) calloc( GRID_ROWS  , sizeof(bool *));
-        
-        int i,j;
-        for(i=0;i < GRID_ROWS;i++){
-                this->cells[i] = (bool *) calloc( GRID_COLS , sizeof(bool));
-                for(j=0;j < GRID_COLS ;j++){
-                        this->cells[i][j] = false;
-                }
-        }
+  int count = 0;
+
+  int l = this->c_left(r,c);
+  int t = this->c_right(r,c);
+  int u = this->c_up(r,c);
+  int d = this->c_down(r,c);  
+  
+  count += _field[r][l] ? 1 : 0;
+  count += _field[r][t] ? 1 : 0;
+  count += _field[u][c] ? 1 : 0;
+  count += _field[d][c] ? 1 : 0;
+  count += _field[u][l] ? 1 : 0;
+  count += _field[d][l] ? 1 : 0;
+  count += _field[u][r] ? 1 : 0;
+  count += _field[d][r] ? 1 : 0;
+
+  return count;
 }
 
 
-bool **GameOfLife::next_cells_init()
+int GameOfLife::c_left(int r, int c)
 {
-        this->next_cells = (bool **) calloc( GRID_ROWS  , sizeof(bool *));
-        
-        int i,j;
-        for(i=0;i < GRID_ROWS;i++){
-                this->next_cells[i] = (bool *) calloc( GRID_COLS , sizeof(bool));
-                for(j=0;j < GRID_COLS ;j++){
-                        this->next_cells[i][j] = false;
-                }
-        }        
+  if( c <= 0 )
+    return FIELD_DIMENSION-1;
+  return c-1;
 }
 
-bool GameOfLife::cells_get(int i, int j)
+int GameOfLife::c_right(int r, int c)
 {
-        if(i<0 || j<0){
-                return false;
-        } else if(i>=GRID_ROWS || j>=GRID_COLS){
-                return false;
-        } else {
-                return this->cells[i][j];
-        }
+  if( c >= (FIELD_DIMENSION-1) )
+    return 0;
+  return c+1;
 }
 
-void GameOfLife::next_cells_set(int i, int j, bool v)
+int GameOfLife::c_up(int r, int c)
 {
-        this->next_cells[i][j] = v;
+  if( r <= 0 )
+    return FIELD_DIMENSION-1;
+  return r-1;
 }
 
-bool GameOfLife::tick()
+int GameOfLife::c_down(int r, int c)
 {
-        if(this->paused == PLAY){
-                this->create_updated_grid();
-                this->cells = this->next_cells;
-        }
-        return this->on_timeout();
-}
-
-void GameOfLife::create_updated_grid()
-{
-        int i,j,k,count;
-
-        this->next_cells_init();
-
-        for(i=0;i<GRID_ROWS;i++){
-                for(j=0;j<GRID_COLS;j++){
-                        count = 0;
-
-                        count += (this->cells_get(i+1,j)) ? 1:0;
-                        count += (this->cells_get(i-1,j)) ? 1:0;
-
-                        for(k=-1;k<2;k++){
-                                count += (this->cells_get(i+k,j+1)) ? 1:0;
-                                count += (this->cells_get(i+k,j-1)) ? 1:0;
-                        }
-
-                        if(this->cells_get(i,j)){
-                                if(count<2){
-                                        this->next_cells_set(i,j,false);
-                                } else if(count>3){
-                                        this->next_cells_set(i,j,false);
-                                } else {
-                                        this->next_cells_set(i,j,true);
-                                }
-                        } else {
-                                if(count == 3){
-                                        this->next_cells_set(i,j,true);
-                                } else {
-                                        this->next_cells_set(i,j,false);
-                                }
-                        }
-                }
-        }
+  if( r >= (FIELD_DIMENSION-1) )
+    return 0;
+  return r+1;
 }
 

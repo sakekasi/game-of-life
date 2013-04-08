@@ -1,79 +1,57 @@
-#ifndef GAME_OF_LIFE_H
-#define GAME_OF_LIFE_H
+#ifndef GAME_OF_LIFE_HH
+#define GAME_OF_LIFE_HH
+#pragma once
 
-#include <gtkmm/drawingarea.h>
+#include "SDL/SDL.h"
+#include "SDL/SDL_gfxPrimitives.h"
 
-#define TOP_YCOORD 0
-#define LEFT_XCOORD 0
-#define GRID_ROWS 1000
-#define GRID_COLS 1000
-#define REFRESH_TIME_MILLIS 100
-#define PAUSE true
-#define PLAY false
+const Sint16 CELL_DIMENSION = 25; //pixels
+const Uint8 LINE_WIDTH = 2; //pixels
 
-class GameOfLife : public Gtk::DrawingArea
+const int FIELD_DIMENSION = 1000; //cells
+
+const int TOP = 0;
+const int LEFT = 0;
+
+const Uint8 BLACK_R = 0;
+const Uint8 BLACK_G = 0;
+const Uint8 BLACK_B = 0;
+
+const Uint8 WHITE_R = 255;
+const Uint8 WHITE_G = 255;
+const Uint8 WHITE_B = 255;
+
+const Uint8 OPAQUE = 255;
+
+
+class GameOfLife 
 {
 public:
-        GameOfLife();
-        virtual ~GameOfLife();
-        
-        int get_cols();
-        int get_rows();
-        
-        int get_width();
-        int get_height();
-        
-        int get_col_width();
-        int get_row_height();
+  GameOfLife(SDL_Surface*);
+  ~GameOfLife();
 
-        void play_pause();
+  void draw();
+  void iterate();
 
-        bool grid_on();
-        bool set_grid_on(bool);
-        void toggle_grid();
+  void set_true(int, int);
+  void set_false(int, int);
 
-        void reset();
-        
-        
-protected:
-        //drawing
-        virtual bool on_draw(const Cairo::RefPtr<Cairo::Context>&);
+private:
 
-        //specific drawing parts
-        bool draw_grid(const Cairo::RefPtr<Cairo::Context>&);
-        bool fill_grid(const Cairo::RefPtr<Cairo::Context>&);
-        bool fill_square(const Cairo::RefPtr<Cairo::Context>&, int, int);
+  SDL_Surface *_screen;
+  bool **_field;
 
-        //gui input (signal handlers)
-        bool on_timeout();
-        bool on_click(GdkEventButton *);
-        bool on_mouse_move(GdkEventMotion *);
+  void draw_background();
+  void draw_lines();
+  void fill_cells();
+  void fill_cell(int, int);
 
-        //game engine
-        bool tick();
-        void create_updated_grid();
-        bool cells_get(int,int);
-        void next_cells_set(int,int,bool);
-        bool **next_cells_init();
-        
-        int columns;
-        int rows;
-        
-        int width;
-        int height;
-        
-        int col_width;
-        int row_height;
-        
-        int l_width;
-
-        bool paused;
-        bool grid;
-        
-        bool** cells;
-        bool** next_cells;
-        
+  int n_live_neighbors(int, int);
+  
+  int c_left(int, int);
+  int c_right(int, int);
+  int c_up(int, int);
+  int c_down(int, int);
 };
-
 
 #endif
