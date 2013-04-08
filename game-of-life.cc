@@ -148,65 +148,65 @@ void GameOfLife::fill_cells()
 	this->fill_cell(i,j);
 }
 
-void GameOfLife::fill_cell(int r, int c)
+void GameOfLife::fill_cell(int x, int y)
 {
-  if( !(r*CELL_DIMENSION > SCREEN_WIDTH || r < 0 ||
-	c*CELL_DIMENSION > SCREEN_HEIGHT || c < 0) )
+  if( !(x*CELL_DIMENSION > SCREEN_WIDTH || x < 0 ||
+	y*CELL_DIMENSION > SCREEN_HEIGHT || y < 0) )
       boxRGBA( _screen,
-	       r*CELL_DIMENSION, c*CELL_DIMENSION,
-	       (r+1)*CELL_DIMENSION, (c+1)*CELL_DIMENSION,
+	       x*CELL_DIMENSION, y*CELL_DIMENSION,
+	       (x+1)*CELL_DIMENSION, (y+1)*CELL_DIMENSION,
 	       BLACK_R, BLACK_G, BLACK_B, OPAQUE);
 }
 
 		     
 
-int GameOfLife::n_live_neighbors(int r, int c)
+int GameOfLife::n_live_neighbors(int x, int y)
 {
   int count = 0;
 
-  int l = this->c_left(r,c);
-  int t = this->c_right(r,c);
-  int u = this->c_up(r,c);
-  int d = this->c_down(r,c);  
+  int l = this->c_left(x,y);
+  int r = this->c_right(x,y);
+  int u = this->c_up(x,y);
+  int d = this->c_down(x,y);  
   
-  count += _field[r][l] ? 1 : 0;
-  count += _field[r][t] ? 1 : 0;
-  count += _field[u][c] ? 1 : 0;
-  count += _field[d][c] ? 1 : 0;
-  count += _field[u][l] ? 1 : 0;
-  count += _field[d][l] ? 1 : 0;
-  count += _field[u][r] ? 1 : 0;
-  count += _field[d][r] ? 1 : 0;
+  count += _field[l][y] ? 1 : 0;
+  count += _field[r][y] ? 1 : 0;
+  count += _field[x][u] ? 1 : 0;
+  count += _field[x][d] ? 1 : 0;
+  count += _field[l][u] ? 1 : 0;
+  count += _field[l][d] ? 1 : 0;
+  count += _field[r][u] ? 1 : 0;
+  count += _field[r][d] ? 1 : 0;
 
   return count;
 }
 
 
-int GameOfLife::c_left(int r, int c)
+int GameOfLife::c_left(int x, int y)
 {
-  if( c <= 0 )
+  if( x <= 0 )
     return FIELD_DIMENSION-1;
-  return c-1;
+  return x-1;
 }
 
-int GameOfLife::c_right(int r, int c)
+int GameOfLife::c_right(int x, int y)
 {
-  if( c >= (FIELD_DIMENSION-1) )
+  if( x >= (FIELD_DIMENSION-1) )
     return 0;
-  return c+1;
+  return x+1;
 }
 
-int GameOfLife::c_up(int r, int c)
+int GameOfLife::c_up(int x, int y)
 {
-  if( r <= 0 )
+  if( y <= 0 )
     return FIELD_DIMENSION-1;
-  return r-1;
+  return y-1;
 }
 
-int GameOfLife::c_down(int r, int c)
+int GameOfLife::c_down(int x, int y)
 {
-  if( r >= (FIELD_DIMENSION-1) )
+  if( y >= (FIELD_DIMENSION-1) )
     return 0;
-  return r+1;
+  return y+1;
 }
 
