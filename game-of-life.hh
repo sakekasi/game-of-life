@@ -5,8 +5,8 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_gfxPrimitives.h"
 
-const Sint16 CELL_DIMENSION = 25; //pixels
-const Uint8 LINE_WIDTH = 2; //pixels
+const Sint16 CELL_DIMENSION = 10; //pixels
+const Uint8 LINE_WIDTH = 1; //pixels
 
 const int FIELD_DIMENSION = 1000; //cells
 

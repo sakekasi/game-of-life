@@ -29,7 +29,7 @@ int main( int argc, char* argv[] )
 
   while(gameRunning)
     {
-      if( SDL_PollEvent(&event) )
+      while( SDL_PollEvent(&event) )
 	{
 	  if( event.type == SDL_QUIT )
 	    gameRunning = false;
@@ -83,10 +83,11 @@ int main( int argc, char* argv[] )
 	}
     
       game.draw();
-      if(iterating)
-	game.iterate();
 
       SDL_Flip(screen);
+      SDL_Delay(1);
+      if(iterating)
+	game.iterate();
     }
 
   SDL_FreeSurface(screen);

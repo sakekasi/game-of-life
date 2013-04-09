@@ -1,2 +1,2 @@
 all:
-	g++ main.cc game-of-life.cc -lSDL -lSDL_gfx
+	g++ main.cc game-of-life.cc -g -lSDL -lSDL_gfx
