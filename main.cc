@@ -4,7 +4,6 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_gfxPrimitives.h"
 #include <string>
-#include <iostream>
 using namespace std;
 
 int main( int argc, char* argv[] )
@@ -68,7 +67,6 @@ int main( int argc, char* argv[] )
 		game.set_true(x,y);
 	      else if( right_clicked )
 		{
-		  cout << "right clicked" << endl;
 		  game.set_false(x,y);
 		}
 	    }
