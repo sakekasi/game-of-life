@@ -80,6 +80,21 @@ void GameOfLife::iterate()
     _field = new_field;
 }
 
+void GameOfLife::reset()
+{
+  for_each(_field, _field+FIELD_DIMENSION, del_field_array);
+  delete[] _field;
+  
+  _field = new bool*[FIELD_DIMENSION];
+  for_each(_field, _field+FIELD_DIMENSION, init_field_array);
+
+  for(int i=0; i<FIELD_DIMENSION; i++)
+    for(int j=0; j<FIELD_DIMENSION; j++)
+      _field[i][j] = false;
+
+}
+
+
 
 void GameOfLife::set_true(int x, int y)
 {

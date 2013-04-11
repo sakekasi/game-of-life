@@ -4,10 +4,27 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_gfxPrimitives.h"
 #include <string>
+#include <iostream>
+#include <cstring>
 using namespace std;
 
 int main( int argc, char* argv[] )
 {
+
+  if( argc > 1 )
+    {
+      if (strcmp(argv[1],"-h") == 0)
+      {
+	cout << "USAGE" << endl
+	     << "SPACE - pause/resume" << endl
+	     << "ESC - reset" << endl
+	     << "L_CLICK - make box black" << endl
+	     << "R_CLICK - make box white" << endl;
+	exit(0);
+      }
+    }
+  
+      
   
   SDL_Surface* screen = NULL;
   
@@ -76,6 +93,9 @@ int main( int argc, char* argv[] )
 		{
 		case SDLK_SPACE:
 		  iterating = !(iterating);
+		  break;
+		case SDLK_ESCAPE:
+		  game.reset();
 		}
 	    }
 	}
@@ -83,7 +103,7 @@ int main( int argc, char* argv[] )
       game.draw();
 
       SDL_Flip(screen);
-      SDL_Delay(1);
+      //      SDL_Delay(1);
       if(iterating)
 	game.iterate();
     }

@@ -32,6 +32,7 @@ public:
 
   void draw();
   void iterate();
+  void reset();
 
   void set_true(int, int);
   void set_false(int, int);
